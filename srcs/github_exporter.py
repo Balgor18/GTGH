@@ -9,10 +9,8 @@ from datetime import datetime, timezone
 from colorama import Fore, Style, init
 import time
 
-# Initialisation de la coloration du terminal (utile pour les logs locaux)
 init(autoreset=True)
 
-# Chargement du token d'environnement
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 if not GITHUB_TOKEN:
     print("❌ GITHUB_TOKEN non défini dans les variables d'environnement.")
@@ -23,11 +21,9 @@ headers = {
     "Accept": "application/vnd.github.v3+json"
 }
 
-# Prometheus metrics
 VIEWS_GAUGE = Gauge('github_repo_views', 'Nombre de vues uniques par repo', ['repo'])
 CLONES_GAUGE = Gauge('github_repo_clones', 'Nombre de clones uniques par repo', ['repo'])
 
-# Flask app pour exposer /metrics
 app = Flask(__name__)
 
 def get_my_repositories():
@@ -70,11 +66,8 @@ def save_stats(repo_name, views, clones, cursor, conn):
     conn.commit()
 
 def collect_metrics():
-    # Connexion SQLite dans ce thread
     conn = sqlite3.connect("traffic_data.db")
     cursor = conn.cursor()
-
-    # S'assurer que la table existe
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS traffic (
         repo_name TEXT PRIMARY KEY,
@@ -86,30 +79,31 @@ def collect_metrics():
     conn.commit()
 
     while True:
-        print("📊 Récupération des données GitHub...")
-        repos = get_my_repositories()
-        for repo in repos:
-            name = repo['name']
-            owner = repo['owner']['login']
+        try:
+            print("📊 Récupération des données GitHub...")
+            repos = get_my_repositories()
+            for repo in repos:
+                name = repo['name']
+                owner = repo['owner']['login']
+                views_data = get_traffic_data(owner, name, "views")
+                clones_data = get_traffic_data(owner, name, "clones")
 
-            views_data = get_traffic_data(owner, name, "views")
-            clones_data = get_traffic_data(owner, name, "clones")
+                if not views_data or not clones_data:
+                    continue
 
-            if not views_data or not clones_data:
-                continue
+                views = views_data["uniques"]
+                clones = clones_data["uniques"]
 
-            views = views_data["uniques"]
-            clones = clones_data["uniques"]
+                VIEWS_GAUGE.labels(repo=name).set(views)
+                CLONES_GAUGE.labels(repo=name).set(clones)
 
-            # Met à jour Prometheus
-            VIEWS_GAUGE.labels(repo=name).set(views)
-            CLONES_GAUGE.labels(repo=name).set(clones)
+                save_stats(name, views, clones, cursor, conn)
 
-            # Sauvegarde SQLite
-            save_stats(name, views, clones, cursor, conn)
+            print("✅ Données mises à jour. Pause 1h.")
+        except Exception as e:
+            print(f"\n❌ ERREUR pendant la collecte : {type(e).__name__} - {e}\n", file=sys.stderr)
 
-        print("✅ Données mises à jour. Pause 1h.")
-        time.sleep(3600)  # Pause de 1 heure entre chaque récupération
+        time.sleep(3600)
 
 @app.route("/metrics")
 def metrics():
