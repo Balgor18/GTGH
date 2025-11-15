@@ -12,6 +12,14 @@ services:
     networks:
       - monitoring
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
 
   prometheus:
     image: prom/prometheus
@@ -21,6 +29,14 @@ services:
     networks:
       - monitoring
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.50"
+          memory: 256M
 
   grafana:
     image: grafana/grafana
@@ -35,6 +51,14 @@ services:
       - prometheus
     networks:
       - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
 
 volumes:
   grafana-data:
@@ -42,5 +66,5 @@ volumes:
 networks:
   monitoring:
     driver: bridge
-    # internal: true 
+    # internal: true
 
