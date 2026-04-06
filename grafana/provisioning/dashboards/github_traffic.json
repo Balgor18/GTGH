@@ -2,19 +2,37 @@
   "title": "GitHub Traffic",
   "uid": "github-traffic",
   "schemaVersion": 38,
-  "version": 2,
-  "refresh": "1h",
+  "version": 5,
+  "refresh": "15m",
   "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "repo",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "query": "label_values(github_repo_views, repo)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "options": [],
+        "refresh": 2,
+        "sort": 1,
+        "label": "Dépôt"
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
       "title": "Nombre total de projets",
       "type": "stat",
-      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "count(github_repo_views)",
+          "expr": "count(github_repo_views{repo=~\"$repo\"})",
           "legendFormat": "Projets",
           "instant": true
         }
@@ -36,11 +54,11 @@
       "id": 2,
       "title": "Total des vues",
       "type": "stat",
-      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(github_repo_views)",
+          "expr": "sum(github_repo_views{repo=~\"$repo\"})",
           "legendFormat": "Vues",
           "instant": true
         }
@@ -62,11 +80,11 @@
       "id": 3,
       "title": "Total des clones",
       "type": "stat",
-      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(github_repo_clones)",
+          "expr": "sum(github_repo_clones{repo=~\"$repo\"})",
           "legendFormat": "Clones",
           "instant": true
         }
@@ -87,24 +105,27 @@
     {
       "id": 4,
       "title": "Vues par repo",
-      "type": "table",
+      "type": "bargauge",
       "gridPos": { "x": 0, "y": 4, "w": 12, "h": 10 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sort_desc(github_repo_views)",
+          "expr": "sort_desc(github_repo_views{repo=~\"$repo\"})",
           "legendFormat": "{{repo}}",
-          "instant": true,
-          "format": "table"
+          "instant": true
         }
       ],
       "options": {
-        "sortBy": [{ "displayName": "Vues", "desc": true }]
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": { "displayMode": "color-background" },
+          "color": { "mode": "fixed", "fixedColor": "green" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -112,45 +133,34 @@
               { "color": "yellow", "value": 5 },
               { "color": "red", "value": 20 }
             ]
-          },
-          "color": { "mode": "thresholds" }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "repo" },
-            "properties": [{ "id": "displayName", "value": "Dépôt" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "displayName", "value": "Vues" }]
           }
-        ]
-      },
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }
-      ]
+        }
+      }
     },
     {
       "id": 5,
       "title": "Clones par repo",
-      "type": "table",
+      "type": "bargauge",
       "gridPos": { "x": 12, "y": 4, "w": 12, "h": 10 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sort_desc(github_repo_clones)",
+          "expr": "sort_desc(github_repo_clones{repo=~\"$repo\"})",
           "legendFormat": "{{repo}}",
-          "instant": true,
-          "format": "table"
+          "instant": true
         }
       ],
       "options": {
-        "sortBy": [{ "displayName": "Clones", "desc": true }]
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": { "displayMode": "color-background" },
+          "color": { "mode": "fixed", "fixedColor": "orange" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -158,23 +168,67 @@
               { "color": "yellow", "value": 3 },
               { "color": "red", "value": 10 }
             ]
-          },
-          "color": { "mode": "thresholds" }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "repo" },
-            "properties": [{ "id": "displayName", "value": "Dépôt" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "displayName", "value": "Clones" }]
           }
-        ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Évolution des vues dans le temps",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "github_repo_views{repo=~\"$repo\"}",
+          "legendFormat": "{{repo}}",
+          "instant": false
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
       },
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true } } }
-      ]
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Évolution des clones dans le temps",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "github_repo_clones{repo=~\"$repo\"}",
+          "legendFormat": "{{repo}}",
+          "instant": false
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        }
+      }
     }
   ]
 }
