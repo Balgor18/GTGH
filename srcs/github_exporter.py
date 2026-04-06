@@ -58,46 +58,46 @@ def get_last_saved_stats(repo_name, cursor):
     """, (repo_name,))
     return cursor.fetchone()
 
-def save_stats(repo_name, views, clones, cursor, conn):
+def save_stats(repo_name, views, clones, cursor):
     cursor.execute("""
     INSERT OR REPLACE INTO traffic (repo_name, date, views, clones)
     VALUES (?, ?, ?, ?)
-    """, (repo_name, datetime.now(timezone.utc).isoformat(), views, clones))
-    conn.commit()
+    """, (repo_name, datetime.now(timezone.utc).date().isoformat(), views, clones))
 
 def collect_metrics():
-    conn = sqlite3.connect("traffic_data.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS traffic (
-        repo_name TEXT PRIMARY KEY,
-        date TEXT,
-        views INTEGER,
-        clones INTEGER
-    )
-    """)
-    conn.commit()
+    with sqlite3.connect("traffic_data.db") as conn:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS traffic (
+            repo_name TEXT,
+            date TEXT,
+            views INTEGER,
+            clones INTEGER,
+            PRIMARY KEY (repo_name, date)
+        )
+        """)
 
     while True:
         try:
             print("📊 Récupération des données GitHub...")
             repos = get_my_repositories()
-            for repo in repos:
-                name = repo['name']
-                owner = repo['owner']['login']
-                views_data = get_traffic_data(owner, name, "views")
-                clones_data = get_traffic_data(owner, name, "clones")
+            with sqlite3.connect("traffic_data.db") as conn:
+                cursor = conn.cursor()
+                for repo in repos:
+                    name = repo['name']
+                    owner = repo['owner']['login']
+                    views_data = get_traffic_data(owner, name, "views")
+                    clones_data = get_traffic_data(owner, name, "clones")
 
-                if not views_data or not clones_data:
-                    continue
+                    if not views_data or not clones_data:
+                        continue
 
-                views = views_data["uniques"]
-                clones = clones_data["uniques"]
+                    views = views_data["uniques"]
+                    clones = clones_data["uniques"]
 
-                VIEWS_GAUGE.labels(repo=name).set(views)
-                CLONES_GAUGE.labels(repo=name).set(clones)
+                    VIEWS_GAUGE.labels(repo=name).set(views)
+                    CLONES_GAUGE.labels(repo=name).set(clones)
 
-                save_stats(name, views, clones, cursor, conn)
+                    save_stats(name, views, clones, cursor)
 
             print("✅ Données mises à jour. Pause 1h.")
         except Exception as e:
