@@ -2,7 +2,7 @@
   "title": "GitHub Traffic",
   "uid": "github-traffic",
   "schemaVersion": 38,
-  "version": 5,
+  "version": 7,
   "refresh": "15m",
   "time": { "from": "now-7d", "to": "now" },
   "templating": {
@@ -32,7 +32,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "count(github_repo_views{repo=~\"$repo\"})",
+          "expr": "count(last_over_time(github_repo_views{repo=~\"$repo\"}[20m]))",
           "legendFormat": "Projets",
           "instant": true
         }
@@ -58,7 +58,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(github_repo_views{repo=~\"$repo\"})",
+          "expr": "sum(last_over_time(github_repo_views{repo=~\"$repo\"}[20m]))",
           "legendFormat": "Vues",
           "instant": true
         }
@@ -84,7 +84,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(github_repo_clones{repo=~\"$repo\"})",
+          "expr": "sum(last_over_time(github_repo_clones{repo=~\"$repo\"}[20m]))",
           "legendFormat": "Clones",
           "instant": true
         }
@@ -110,7 +110,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sort_desc(github_repo_views{repo=~\"$repo\"})",
+          "expr": "sort_desc(last_over_time(github_repo_views{repo=~\"$repo\"}[20m]))",
           "legendFormat": "{{repo}}",
           "instant": true
         }
@@ -145,7 +145,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sort_desc(github_repo_clones{repo=~\"$repo\"})",
+          "expr": "sort_desc(last_over_time(github_repo_clones{repo=~\"$repo\"}[20m]))",
           "legendFormat": "{{repo}}",
           "instant": true
         }
@@ -196,7 +196,8 @@
             "lineWidth": 2,
             "fillOpacity": 10,
             "pointSize": 5,
-            "showPoints": "auto"
+            "showPoints": "auto",
+            "spanNulls": true
           }
         }
       }
@@ -225,7 +226,8 @@
             "lineWidth": 2,
             "fillOpacity": 10,
             "pointSize": 5,
-            "showPoints": "auto"
+            "showPoints": "auto",
+            "spanNulls": true
           }
         }
       }
